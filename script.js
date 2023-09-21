@@ -1,15 +1,23 @@
-let timeout = null;
-
-const debounce = (callback, deplay) => {
+const debounce = (callback, delay) => {
   let timeout = null;
+
   return (...args) => {
     clearTimeout(timeout);
     timeout = setTimeout(() => {
       callback(...args); // spread operator
-    }, deplay);
+    }, delay);
   };
 };
+
+let shouldWait = false;
+let lastArgs = null;
+
 const handleInputChange = (event) => {
+  if (shouldWait) {
+    lastArgs = event;
+    return;
+  }
+
   fetch(
     "https://dummyjson.com/users/search?" +
       new URLSearchParams({
@@ -34,8 +42,19 @@ const handleInputChange = (event) => {
     .catch((err) => {
       console.error("ERROR", err);
     });
+  shouldWait = true;
+
+  setTimeout(() => {
+    if (lastArgs === null) {
+      shouldWait = false;
+    } else {
+      shouldWait = false;
+      handleInputChange(lastArgs);
+      lastArgs = null;
+    }
+  }, 1000);
 };
 
 document
   .getElementById("search_field")
-  .addEventListener("input", debounce(handleInputChange, 1000));
+  .addEventListener("input", handleInputChange);
